@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = ".;grpc";
+package grpc;
+
+message Message {
+  bytes data = 1;
+}
+
+service Communicate {
+  rpc Connect(stream Message) returns (stream Message);
+}
