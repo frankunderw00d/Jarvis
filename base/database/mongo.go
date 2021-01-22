@@ -44,13 +44,13 @@ const (
 )
 
 const (
-	ErrNilClientText           = "client is nil"
+	ErrNilClientText           = "a_client is nil"
 	ErrEmptyDatabaseNameText   = "database name is empty"
 	ErrEmptyCollectionNameText = "collection name is empty"
 )
 
 var (
-	// client 为 nil 错误
+	// a_client 为 nil 错误
 	ErrNilClient = errors.New(ErrNilClientText)
 	// database name 为空 错误
 	ErrEmptyDatabaseName = errors.New(ErrEmptyDatabaseNameText)

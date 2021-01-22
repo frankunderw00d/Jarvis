@@ -73,7 +73,7 @@ const (
 	ErrNilChannelText           = "channel is nil"
 	ErrReceiveChannelClosedText = "receive channel closed"
 	ErrClosedConnectionText     = "use of closed network connection"
-	ErrClientAlreadyClosedText  = "client already closed"
+	ErrClientAlreadyClosedText  = "a_client already closed"
 	ErrTimeoutText              = "timeout"
 )
 
@@ -314,7 +314,7 @@ func (sc *socketClient) run() {
 		for _, data := range sc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket client unmarshal data error : %s", err.Error())
+				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -322,17 +322,17 @@ func (sc *socketClient) run() {
 				sc.baseClient.receiveChan <- response
 			} else {
 				if err := sc.baseClient.Route(response); err != nil {
-					log.Printf("Socket client route response error : %s", err.Error())
+					log.Printf("Socket a_client route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket client read error : %s", e.Error())
+		log.Printf("Socket a_client read error : %s", e.Error())
 
 		if err := sc.Close(); err != nil {
-			log.Printf("socket client close error : %s", err.Error())
+			log.Printf("socket a_client close error : %s", err.Error())
 		}
 	}
 }
@@ -455,7 +455,7 @@ func (wsc *webSocketClient) run() {
 		for _, data := range wsc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket client unmarshal data error : %s", err.Error())
+				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -463,17 +463,17 @@ func (wsc *webSocketClient) run() {
 				wsc.baseClient.receiveChan <- response
 			} else {
 				if err := wsc.baseClient.Route(response); err != nil {
-					log.Printf("Socket client route response error : %s", err.Error())
+					log.Printf("Socket a_client route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket client read error : %s", e.Error())
+		log.Printf("Socket a_client read error : %s", e.Error())
 
 		if err := wsc.Close(); err != nil {
-			log.Printf("socket client close error : %s", err.Error())
+			log.Printf("socket a_client close error : %s", err.Error())
 		}
 	}
 }
@@ -607,7 +607,7 @@ func (gc *gRPCClient) run() {
 		for _, data := range gc.baseClient.p.Unpack(d.Data) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket client unmarshal data error : %s", err.Error())
+				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -615,17 +615,17 @@ func (gc *gRPCClient) run() {
 				gc.baseClient.receiveChan <- response
 			} else {
 				if err := gc.baseClient.Route(response); err != nil {
-					log.Printf("Socket client route response error : %s", err.Error())
+					log.Printf("Socket a_client route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket client read error : %s", e.Error())
+		log.Printf("Socket a_client read error : %s", e.Error())
 
 		if err := gc.Close(); err != nil {
-			log.Printf("socket client close error : %s", err.Error())
+			log.Printf("socket a_client close error : %s", err.Error())
 		}
 	}
 }

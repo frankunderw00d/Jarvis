@@ -2,7 +2,10 @@
 // context 的接口(即为实现的指针)，context 可以读取请求和发送多次响应，调用 Done() 函数即在调用链中截止
 package network
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type (
 	// 上下文定义
@@ -15,6 +18,15 @@ type (
 
 		// 错误响应
 		Error(error) error
+
+		// 请求成功回复
+		Success([]byte) error
+
+		// 请求错误回复
+		BadRequest(string) error
+
+		// 服务器错误回复
+		ServerError(error) error
 
 		// 钩住查询 Item 的函数
 		HookFind(func(string) (Item, error))
@@ -110,4 +122,35 @@ func (c *context) findAndSendReply(id, reply string, data []byte) error {
 	})
 
 	return nil
+}
+
+// 请求成功回复
+func (c *context) Success(d []byte) error {
+	reply := ReplySuccess(d)
+	data, err := json.Marshal(&reply)
+	if err != nil {
+		return err
+	}
+
+	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
+}
+
+// 请求错误回复
+func (c *context) BadRequest(str string) error {
+	reply := ReplyBadRequest([]byte(str))
+	data, err := json.Marshal(&reply)
+	if err != nil {
+		return err
+	}
+	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
+}
+
+// 服务器错误回复
+func (c *context) ServerError(e error) error {
+	reply := ReplyServerError([]byte(e.Error()))
+	data, err := json.Marshal(&reply)
+	if err != nil {
+		return err
+	}
+	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
 }
