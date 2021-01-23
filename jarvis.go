@@ -8,7 +8,7 @@ import (
 func init() {}
 
 func main() {
-	r := regexp.MustCompile("^[a-zA-X]+[a-zA-Z0-9]{5,17}$")
+	r := regexp.MustCompile("^[a-zA-Z]+[a-zA-Z0-9]{5,17}$")
 
-	log.Println(r.MatchString(""))
+	log.Println(r.MatchString("YCWMChSEOp69831373"))
 }
