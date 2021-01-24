@@ -61,13 +61,13 @@ func CloseRedis() error {
 
 // --------------------------------------------------- Mongo Public Methods --------------------------------------------
 // 1.初始化 Mongo
-func InitializeMongo(host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error {
-	return defaultMongo.Initialize(host, port, maxConnIdleTime, poolSize)
+func InitializeMongo(username, password, database, host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error {
+	return defaultMongo.Initialize(username, password, database, host, port, maxConnIdleTime, poolSize)
 }
 
 // 2.Mongo 获取连接
-func GetMongoConn(database, collection string) (*mongoGo.Collection, error) {
-	return defaultMongo.Get(database, collection)
+func GetMongoConn(collection string) (*mongoGo.Collection, error) {
+	return defaultMongo.Get(collection)
 }
 
 // 3.关闭 Mongo

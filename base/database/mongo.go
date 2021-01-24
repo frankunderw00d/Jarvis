@@ -13,10 +13,10 @@ type (
 	// Mongo 定义
 	Mongo interface {
 		// 初始化
-		Initialize(host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error
+		Initialize(username, password, database, host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error
 
 		// 获取指向指定 database 的 collection 的连接
-		Get(database, collection string) (*mongoGo.Collection, error)
+		Get(collection string) (*mongoGo.Collection, error)
 
 		// 关闭连接池
 		Close() error
@@ -27,6 +27,7 @@ type (
 		ctx        context.Context
 		cancelFunc context.CancelFunc
 		client     *mongoGo.Client
+		database   string
 	}
 )
 
@@ -64,7 +65,10 @@ func NewMongo() Mongo {
 }
 
 // 初始化
-func (m *mongo) Initialize(host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error {
+func (m *mongo) Initialize(username, password, database, host string, port int, maxConnIdleTime time.Duration, poolSize uint64) error {
+	if database == "" {
+		return ErrEmptyDatabaseName
+	}
 	if host == "" {
 		host = DefaultMongoHost
 	}
@@ -80,7 +84,12 @@ func (m *mongo) Initialize(host string, port int, maxConnIdleTime time.Duration,
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	uri := fmt.Sprintf("%s://%s:%d", DefaultMongoScheme, host, port)
+	userPart := ""
+	if username != "" && password != "" {
+		userPart = fmt.Sprintf("%s:%s@", username, password)
+	}
+
+	uri := fmt.Sprintf("%s://%s%s:%d/%s", DefaultMongoScheme, userPart, host, port, database)
 
 	clientOption := options.Client().ApplyURI(uri)
 	clientOption.SetMaxConnIdleTime(maxConnIdleTime)
@@ -99,23 +108,24 @@ func (m *mongo) Initialize(host string, port int, maxConnIdleTime time.Duration,
 	m.client = client
 	m.ctx = ctx
 	m.cancelFunc = cancel
+	m.database = database
 
 	return nil
 }
 
 // 获取指向指定 database 的 collection 的连接
-func (m *mongo) Get(database, collection string) (*mongoGo.Collection, error) {
+func (m *mongo) Get(collection string) (*mongoGo.Collection, error) {
 	if m.client == nil {
 		return nil, ErrNilClient
 	}
-	if database == "" {
+	if m.database == "" {
 		return nil, ErrEmptyDatabaseName
 	}
 	if collection == "" {
 		return nil, ErrEmptyCollectionName
 	}
 
-	return m.client.Database(database).Collection(collection), nil
+	return m.client.Database(m.database).Collection(collection), nil
 }
 
 // 关闭连接池
