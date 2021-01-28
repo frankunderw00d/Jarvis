@@ -13,11 +13,11 @@ type (
 		// 获取请求
 		Request() Message
 
-		// 响应
-		Reply(string, string, []byte) error
+		// 设置额外信息
+		SetExtra(string, interface{})
 
-		// 错误响应
-		Error(error) error
+		// 获取额外信息
+		Extra(string, interface{}) interface{}
 
 		// 请求成功回复
 		Success([]byte) error
@@ -43,6 +43,7 @@ type (
 		request  Message                    // 请求
 		done     bool                       // 是否中断调用链
 		findFunc func(string) (Item, error) // 寻找响应调用
+		extra    map[string]interface{}     // 额外附带信息
 	}
 )
 
@@ -62,6 +63,7 @@ func NewContext(request Message) Context {
 		request:  request,
 		done:     false, // 默认未结束调用链
 		findFunc: nil,   // 默认不持有任何查找 Item 函数
+		extra:    map[string]interface{}{},
 	}
 }
 
@@ -72,14 +74,28 @@ func (c *context) Request() Message {
 	return request
 }
 
-// 响应
-func (c *context) Reply(id string, reply string, data []byte) error {
-	return c.findAndSendReply(id, reply, data)
+//// 响应
+//func (c *context) Reply(id string, reply string, data []byte) error {
+//	return c.findAndSendReply(id, reply, data)
+//}
+//
+//// 错误响应
+//func (c *context) Error(err error) error {
+//	return c.findAndSendReply(c.request.ID, c.request.Reply, []byte(err.Error()))
+//}
+
+// 设置额外信息
+func (c *context) SetExtra(key string, value interface{}) {
+	c.extra[key] = value
 }
 
-// 错误响应
-func (c *context) Error(err error) error {
-	return c.findAndSendReply(c.request.ID, c.request.Reply, []byte(err.Error()))
+// 获取额外信息
+func (c *context) Extra(key string, defaultValue interface{}) interface{} {
+	v, exist := c.extra[key]
+	if !exist {
+		return defaultValue
+	}
+	return v
 }
 
 // 钩住查询 Item 的函数

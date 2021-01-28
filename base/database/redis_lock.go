@@ -38,6 +38,8 @@ const (
 	RedisUnlockCommand = "del"
 	// 默认加锁超时时间
 	DefaultEX = 2
+	// 最大尝试加锁次数 0.1+0.2+0.4+0.8+1.6+3.2+6.4+12.8+25.6+51.2 = 102.3 second
+	MaxLockTryCount = 10
 )
 
 var ()
