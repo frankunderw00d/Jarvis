@@ -6,94 +6,120 @@ import (
 )
 
 type (
-	// Redis 锁定义
 	RedisLock interface {
+		// 初始化
+		Initialize() error
+
 		// 加锁
 		Lock(string, int) bool
 
+		// 阻塞调用线程直到加锁为止，间隔尝试时间为 0.04s、0.2s、1s、1s、1s......
+		UntilLock(string, int) bool
+
 		// 解锁
-		UnLock(string) bool
+		Unlock(string) bool
 
 		// 关闭
 		Close() error
 	}
 
-	// Redis 锁定义实现
 	redisLock struct {
-		redisConn redisGo.Conn // redis 连接
-		ex        int          // 加锁超时时间(以 second 为单位)，防止死锁
+		conn redisGo.Conn // redis 连接
 	}
 )
 
 const (
-	// set 加锁命令
-	RedisLockCommand = "set"
-	// set 加锁值
-	RedisLockValue = "1"
-	// set 加锁超时命令
-	RedisLockEXCommand = "ex"
-	// set 加锁排他命令
-	RedisLockIfNotExist = "nx"
-	// del 解锁命令
-	RedisUnlockCommand = "del"
-	// 默认加锁超时时间
-	DefaultEX = 2
-	// 最大尝试加锁次数 0.1+0.2+0.4+0.8+1.6+3.2+6.4+12.8+25.6+51.2 = 102.3 second
-	MaxLockTryCount = 10
+	DefaultEx    = 5  // 默认 ex 过期时间
+	DefaultMinEx = 1  // 最小 ex 过期时间
+	DefaultMaxEx = 15 // 最大 ex 过期时间
 )
 
 var ()
 
-// 新建 Redis 锁
-func NewRedisLock(conn redisGo.Conn, ex int) RedisLock {
-	if ex <= 0 {
-		ex = DefaultEX
+func NewRedisLock() RedisLock {
+	return &redisLock{}
+}
+
+func (rl *redisLock) Initialize() error {
+	c, err := GetRedisConn()
+	if err != nil {
+		return err
 	}
 
-	return &redisLock{
-		redisConn: conn,
-		ex:        ex,
-	}
+	rl.conn = c
+	return nil
 }
 
 // 加锁
-func (rl *redisLock) Lock(key string, try int) bool {
-	if rl.redisConn == nil {
+// key ： 键
+// ex : 过期时间，默认 5 s ，可选闭区间[1,15]
+func (rl *redisLock) Lock(key string, ex int) bool {
+	// 连接为 nil ， 加锁失败
+	if rl.conn == nil {
+		return false
+	}
+	// 键为空，加锁失败
+	if key == "" {
+		return false
+	}
+	// 过期时间优化
+	if ex < DefaultMinEx || ex > DefaultMaxEx {
+		ex = DefaultEx
+	}
+
+	_, err := redisGo.String(rl.conn.Do("set", key, 1, "ex", ex, "nx"))
+	if err != nil {
+		// 无论是 nil return 还是别的错误，都加锁失败
 		return false
 	}
 
-	count := 1
-	waitTime := time.Millisecond * time.Duration(100)
+	// “OK” 加锁成功
+	return true
+}
 
-	for count <= try {
-		_, err := redisGo.String(rl.redisConn.Do(RedisLockCommand, key, RedisLockValue, RedisLockEXCommand, rl.ex, RedisLockIfNotExist))
-		if err == nil {
-			return true
-		} else {
-			time.Sleep(waitTime)
-			count++
-			waitTime *= 2
+func (rl *redisLock) UntilLock(key string, ex int) bool {
+	// 连接为 nil ， 加锁失败
+	if rl.conn == nil {
+		return false
+	}
+	// 键为空，加锁失败
+	if key == "" {
+		return false
+	}
+
+	wait := time.Millisecond * time.Duration(40)
+
+	for !rl.Lock(key, ex) {
+		time.Sleep(wait)
+
+		if wait < time.Second {
+			wait = wait * 5
 		}
 	}
 
-	return false
+	return true
 }
 
-// 解锁
-func (rl *redisLock) UnLock(key string) bool {
-	if rl.redisConn == nil {
+func (rl *redisLock) Unlock(key string) bool {
+	// 连接为 nil ， 解锁失败
+	if rl.conn == nil {
+		return false
+	}
+	// 键为空，解锁失败
+	if key == "" {
 		return false
 	}
 
-	reply, err := redisGo.Int(rl.redisConn.Do(RedisUnlockCommand, key))
+	v, err := redisGo.Int(rl.conn.Do("del", key))
 	if err != nil {
+		// 错误，都加锁失败
 		return false
 	}
 
-	return reply == 1
+	// v == 1 说明删除对应的 key
+	return v == 1
 }
 
-// 关闭
 func (rl *redisLock) Close() error {
-	return rl.redisConn.Close()
+	return rl.conn.Close()
 }
