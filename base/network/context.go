@@ -19,6 +19,9 @@ type (
 		// 获取额外信息
 		Extra(string, interface{}) interface{}
 
+		// 原始数据返回，不经过 Reply 结构包含，常用于跨服务调用时，中间曾转发
+		BinaryReply(d []byte) error
+
 		// 请求成功回复
 		Success([]byte) error
 
@@ -138,6 +141,11 @@ func (c *context) findAndSendReply(id, reply string, data []byte) error {
 	})
 
 	return nil
+}
+
+// 原始数据返回，不经过 Reply 结构包含，常用于跨服务调用时，中间曾转发
+func (c *context) BinaryReply(d []byte) error {
+	return c.findAndSendReply(c.request.ID, c.request.Reply, d)
 }
 
 // 请求成功回复
