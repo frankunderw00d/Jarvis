@@ -160,4 +160,9 @@ func (m *manager) CurrentManageCount() int64 {
 // 注册观察者
 func (m *manager) RegisterObserver(observer Observer) {
 	m.observers = append(m.observers, observer)
+
+	// 新建空 Message 上下文钩住端管理者的寻找端函数，观察者主动使用此函数往端发送 Message
+	ctx := NewContext(Message{})
+	ctx.HookFind(m.FindItem)
+	go observer.InitiativeSend(ctx)
 }

@@ -19,6 +19,9 @@ type (
 		// 获取额外信息
 		Extra(string, interface{}) interface{}
 
+		// 根据 id 查询和调用 Item 的 Send() 函数
+		FindAndSendReply(string, string, []byte) error
+
 		// 原始数据返回，不经过 Reply 结构包含，常用于跨服务调用时，中间曾转发
 		BinaryReply(d []byte) error
 
@@ -77,16 +80,6 @@ func (c *context) Request() Message {
 	return request
 }
 
-//// 响应
-//func (c *context) Reply(id string, reply string, data []byte) error {
-//	return c.findAndSendReply(id, reply, data)
-//}
-//
-//// 错误响应
-//func (c *context) Error(err error) error {
-//	return c.findAndSendReply(c.request.ID, c.request.Reply, []byte(err.Error()))
-//}
-
 // 设置额外信息
 func (c *context) SetExtra(key string, value interface{}) {
 	c.extra[key] = value
@@ -119,7 +112,7 @@ func (c *context) IsDone() bool {
 }
 
 // 根据 id 查询和调用 Item 的 Send() 函数
-func (c *context) findAndSendReply(id, reply string, data []byte) error {
+func (c *context) FindAndSendReply(id, reply string, data []byte) error {
 	if id == "" {
 		return ErrNilId
 	}
@@ -145,7 +138,7 @@ func (c *context) findAndSendReply(id, reply string, data []byte) error {
 
 // 原始数据返回，不经过 Reply 结构包含，常用于跨服务调用时，中间曾转发
 func (c *context) BinaryReply(d []byte) error {
-	return c.findAndSendReply(c.request.ID, c.request.Reply, d)
+	return c.FindAndSendReply(c.request.ID, c.request.Reply, d)
 }
 
 // 请求成功回复
@@ -156,7 +149,7 @@ func (c *context) Success(d []byte) error {
 		return err
 	}
 
-	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
+	return c.FindAndSendReply(c.request.ID, c.request.Reply, data)
 }
 
 // 请求错误回复
@@ -166,7 +159,7 @@ func (c *context) BadRequest(str string) error {
 	if err != nil {
 		return err
 	}
-	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
+	return c.FindAndSendReply(c.request.ID, c.request.Reply, data)
 }
 
 // 服务器错误回复
@@ -176,5 +169,5 @@ func (c *context) ServerError(e error) error {
 	if err != nil {
 		return err
 	}
-	return c.findAndSendReply(c.request.ID, c.request.Reply, data)
+	return c.FindAndSendReply(c.request.ID, c.request.Reply, data)
 }

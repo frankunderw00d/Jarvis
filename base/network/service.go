@@ -146,6 +146,7 @@ func (s *service) RegisterObserver(observer Observer) error {
 
 	// 在 Service 的 manager(端管理) 中注册观察者
 	s.manager.RegisterObserver(observer)
+
 	return nil
 }
 

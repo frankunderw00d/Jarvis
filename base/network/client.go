@@ -18,6 +18,9 @@ type (
 		// 初始化
 		Initialize() error
 
+		// 注册路由
+		RegisterReply(string, func(Message)) error
+
 		// 接收
 		Receive() (Message, error)
 
@@ -73,7 +76,7 @@ const (
 	ErrNilChannelText           = "channel is nil"
 	ErrReceiveChannelClosedText = "receive channel closed"
 	ErrClosedConnectionText     = "use of closed network connection"
-	ErrClientAlreadyClosedText  = "a_client already closed"
+	ErrClientAlreadyClosedText  = " already closed"
 	ErrTimeoutText              = "timeout"
 )
 
@@ -215,6 +218,16 @@ func (sc *socketClient) Initialize() error {
 	return nil
 }
 
+func (sc *socketClient) RegisterReply(route string, function func(Message)) error {
+	c := make(chan Message)
+	go func(channel chan Message) {
+		msg := <-channel
+		function(msg)
+	}(c)
+
+	return sc.baseClient.AddRoute(route, c)
+}
+
 // 接收
 func (sc *socketClient) Receive() (Message, error) {
 	if sc.baseClient.closed {
@@ -314,7 +327,7 @@ func (sc *socketClient) run() {
 		for _, data := range sc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
+				log.Printf("Socket  unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -322,17 +335,17 @@ func (sc *socketClient) run() {
 				sc.baseClient.receiveChan <- response
 			} else {
 				if err := sc.baseClient.Route(response); err != nil {
-					log.Printf("Socket a_client route response error : %s", err.Error())
+					log.Printf("Socket route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket a_client read error : %s", e.Error())
+		log.Printf("Socket  read error : %s", e.Error())
 
 		if err := sc.Close(); err != nil {
-			log.Printf("socket a_client close error : %s", err.Error())
+			log.Printf("socket  close error : %s", err.Error())
 		}
 	}
 }
@@ -354,6 +367,16 @@ func (wsc *webSocketClient) Initialize() error {
 	go wsc.run()
 
 	return nil
+}
+
+func (wsc *webSocketClient) RegisterReply(route string, function func(Message)) error {
+	c := make(chan Message)
+	go func(channel chan Message) {
+		msg := <-channel
+		function(msg)
+	}(c)
+
+	return wsc.baseClient.AddRoute(route, c)
 }
 
 // 接收
@@ -455,7 +478,7 @@ func (wsc *webSocketClient) run() {
 		for _, data := range wsc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
+				log.Printf("Socket  unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -463,17 +486,17 @@ func (wsc *webSocketClient) run() {
 				wsc.baseClient.receiveChan <- response
 			} else {
 				if err := wsc.baseClient.Route(response); err != nil {
-					log.Printf("Socket a_client route response error : %s", err.Error())
+					log.Printf("Socket  route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket a_client read error : %s", e.Error())
+		log.Printf("Socket  read error : %s", e.Error())
 
 		if err := wsc.Close(); err != nil {
-			log.Printf("socket a_client close error : %s", err.Error())
+			log.Printf("socket  close error : %s", err.Error())
 		}
 	}
 }
@@ -502,6 +525,16 @@ func (gc *gRPCClient) Initialize() error {
 	go gc.run()
 
 	return nil
+}
+
+func (gc *gRPCClient) RegisterReply(route string, function func(Message)) error {
+	c := make(chan Message)
+	go func(channel chan Message, f func(Message)) {
+		msg := <-channel
+		f(msg)
+	}(c, function)
+
+	return gc.baseClient.AddRoute(route, c)
 }
 
 // 接收
@@ -607,7 +640,7 @@ func (gc *gRPCClient) run() {
 		for _, data := range gc.baseClient.p.Unpack(d.Data) {
 			response := Message{}
 			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket a_client unmarshal data error : %s", err.Error())
+				log.Printf("Socket  unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -615,17 +648,17 @@ func (gc *gRPCClient) run() {
 				gc.baseClient.receiveChan <- response
 			} else {
 				if err := gc.baseClient.Route(response); err != nil {
-					log.Printf("Socket a_client route response error : %s", err.Error())
+					log.Printf("Socket  route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket a_client read error : %s", e.Error())
+		log.Printf("Socket  read error : %s", e.Error())
 
 		if err := gc.Close(); err != nil {
-			log.Printf("socket a_client close error : %s", err.Error())
+			log.Printf("socket  close error : %s", err.Error())
 		}
 	}
 }
