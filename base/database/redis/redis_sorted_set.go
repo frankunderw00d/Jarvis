@@ -1,4 +1,4 @@
-package database
+package redis
 
 import (
 	redisGo "github.com/gomodule/redigo/redis"
@@ -8,46 +8,46 @@ import (
 
 type (
 	// redis 有序集合成员
-	RedisSortedSetMember struct {
+	SortedSetMember struct {
 		Member string  `json:"member"`
 		Score  float64 `json:"score"`
 	}
 
 	// redis 有序集合中带分数展示类型
-	RedisSortedSetScoresType string
+	SortedSetScoresType string
 
 	// redis 有序集合中展示个数限制类型
-	RedisSortedSetLimit string
+	SortedSetLimit string
 
 	// redis 有序集合中最小最大值类型
-	RedisSortedSetValue string
+	SortedSetValue string
 
 	// redis 有序集合中 LEX 最小最大值类型
-	RedisSortedSetLexValue string
+	SortedSetLexValue string
 )
 
 const (
 	// redis 有序集合中带分数展示
-	RedisSortedSetWithScores RedisSortedSetScoresType = "withscores"
+	SortedSetWithScores SortedSetScoresType = "withscores"
 	// redis 有序集合中不带分数展示
-	RedisSortedSetWithOutScores RedisSortedSetScoresType = ""
+	SortedSetWithOutScores SortedSetScoresType = ""
 	// redis 有序集合中不限制展示个数
-	RedisSortedSetLimitNone RedisSortedSetLimit = "NOLIMIT"
+	SortedSetLimitNone SortedSetLimit = "NOLIMIT"
 	// redis 有序集合中最大值 +inf
-	RedisSortedSetValuePositiveInf RedisSortedSetValue = "+inf"
+	SortedSetValuePositiveInf SortedSetValue = "+inf"
 	// redis 有序集合中最小值 -inf
-	RedisSortedSetValueNegativeInf RedisSortedSetValue = "-inf"
+	SortedSetValueNegativeInf SortedSetValue = "-inf"
 	// redis 有序集合中 LEX 最大值 +
-	RedisSortedSetValueMax RedisSortedSetLexValue = "+"
+	SortedSetValueMax SortedSetLexValue = "+"
 	// redis 有序集合中最小值 -inf
-	RedisSortedSetValueMin RedisSortedSetLexValue = "-"
+	SortedSetValueMin SortedSetLexValue = "-"
 )
 
 var ()
 
 // 解析 redis 有序集合中限制展示个数命令
-func (rssl RedisSortedSetLimit) parse() []interface{} {
-	if rssl == RedisSortedSetLimitNone {
+func (rssl SortedSetLimit) parse() []interface{} {
+	if rssl == SortedSetLimitNone {
 		return []interface{}{}
 	}
 
@@ -59,16 +59,16 @@ func (rssl RedisSortedSetLimit) parse() []interface{} {
 	return v
 }
 
-func Limit(s string) RedisSortedSetLimit {
-	return RedisSortedSetLimit(s)
+func Limit(s string) SortedSetLimit {
+	return SortedSetLimit(s)
 }
 
-func (rssv RedisSortedSetValue) parse() interface{} {
-	if rssv == RedisSortedSetValuePositiveInf {
-		return string(RedisSortedSetValuePositiveInf)
+func (rssv SortedSetValue) parse() interface{} {
+	if rssv == SortedSetValuePositiveInf {
+		return string(SortedSetValuePositiveInf)
 	}
-	if rssv == RedisSortedSetValueNegativeInf {
-		return string(RedisSortedSetValueNegativeInf)
+	if rssv == SortedSetValueNegativeInf {
+		return string(SortedSetValueNegativeInf)
 	}
 
 	v, err := strconv.ParseFloat(string(rssv), 64)
@@ -78,16 +78,16 @@ func (rssv RedisSortedSetValue) parse() interface{} {
 	return v
 }
 
-func Value(s string) RedisSortedSetValue {
-	return RedisSortedSetValue(s)
+func Value(s string) SortedSetValue {
+	return SortedSetValue(s)
 }
 
-func (rsslv RedisSortedSetLexValue) parse() interface{} {
+func (rsslv SortedSetLexValue) parse() interface{} {
 	return string(rsslv)
 }
 
-func LEXValue(s string) RedisSortedSetLexValue {
-	return RedisSortedSetLexValue(s)
+func LEXValue(s string) SortedSetLexValue {
+	return SortedSetLexValue(s)
 }
 
 // 将一个或多个 member 元素及其 score 值加入到有序集 key 当中
@@ -189,14 +189,14 @@ func ZCount(key string, min, max float64) (int, error) {
 // 也可以使用负数下标，以 -1 表示最后一个成员， -2 表示倒数第二个成员，以此类推
 // 当 key 不存在时，返回 0
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRange(key string, start, stop int, scoresType RedisSortedSetScoresType) ([]RedisSortedSetMember, error) {
+func ZRange(key string, start, stop int, scoresType SortedSetScoresType) ([]SortedSetMember, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return nil, err
 	}
 
 	args := []interface{}{key, start, stop}
-	if scoresType == RedisSortedSetWithScores {
+	if scoresType == SortedSetWithScores {
 		args = append(args, scoresType)
 	}
 
@@ -205,15 +205,15 @@ func ZRange(key string, start, stop int, scoresType RedisSortedSetScoresType) ([
 		return nil, err
 	}
 
-	v := make([]RedisSortedSetMember, 0)
-	if scoresType == RedisSortedSetWithScores {
+	v := make([]SortedSetMember, 0)
+	if scoresType == SortedSetWithScores {
 		for i := 0; i < len(data); i += 2 {
 			score, err := strconv.ParseFloat(string(data[i+1]), 64)
 			if err != nil {
 				return nil, err
 			}
 
-			member := RedisSortedSetMember{
+			member := SortedSetMember{
 				Member: string(data[i]),
 				Score:  score,
 			}
@@ -222,7 +222,7 @@ func ZRange(key string, start, stop int, scoresType RedisSortedSetScoresType) ([
 		}
 	} else {
 		for i := 0; i < len(data); i++ {
-			v = append(v, RedisSortedSetMember{Member: string(data[i])})
+			v = append(v, SortedSetMember{Member: string(data[i])})
 		}
 	}
 
@@ -235,14 +235,14 @@ func ZRange(key string, start, stop int, scoresType RedisSortedSetScoresType) ([
 // 也可以使用负数下标，以 -1 表示最后一个成员， -2 表示倒数第二个成员，以此类推
 // 当 key 不存在时，返回 0
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRevRange(key string, start, stop int, scoresType RedisSortedSetScoresType) ([]RedisSortedSetMember, error) {
+func ZRevRange(key string, start, stop int, scoresType SortedSetScoresType) ([]SortedSetMember, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return nil, err
 	}
 
 	args := []interface{}{key, start, stop}
-	if scoresType == RedisSortedSetWithScores {
+	if scoresType == SortedSetWithScores {
 		args = append(args, scoresType)
 	}
 
@@ -251,15 +251,15 @@ func ZRevRange(key string, start, stop int, scoresType RedisSortedSetScoresType)
 		return nil, err
 	}
 
-	v := make([]RedisSortedSetMember, 0)
-	if scoresType == RedisSortedSetWithScores {
+	v := make([]SortedSetMember, 0)
+	if scoresType == SortedSetWithScores {
 		for i := 0; i < len(data); i += 2 {
 			score, err := strconv.ParseFloat(string(data[i+1]), 64)
 			if err != nil {
 				return nil, err
 			}
 
-			member := RedisSortedSetMember{
+			member := SortedSetMember{
 				Member: string(data[i]),
 				Score:  score,
 			}
@@ -268,7 +268,7 @@ func ZRevRange(key string, start, stop int, scoresType RedisSortedSetScoresType)
 		}
 	} else {
 		for i := 0; i < len(data); i++ {
-			v = append(v, RedisSortedSetMember{Member: string(data[i])})
+			v = append(v, SortedSetMember{Member: string(data[i])})
 		}
 	}
 
@@ -281,14 +281,14 @@ func ZRevRange(key string, start, stop int, scoresType RedisSortedSetScoresType)
 // 可选的 WITHSCORES 参数决定结果集是单单返回有序集的成员，还是将有序集成员及其 score 值一起返回
 // 当 key 不存在时，返回 0
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRangeByScore(key string, min, max RedisSortedSetValue, scoresType RedisSortedSetScoresType, limit RedisSortedSetLimit) ([]RedisSortedSetMember, error) {
+func ZRangeByScore(key string, min, max SortedSetValue, scoresType SortedSetScoresType, limit SortedSetLimit) ([]SortedSetMember, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return nil, err
 	}
 
 	args := []interface{}{key, min.parse(), max.parse()}
-	if scoresType == RedisSortedSetWithScores {
+	if scoresType == SortedSetWithScores {
 		args = append(args, scoresType)
 	}
 	l := limit.parse()
@@ -301,15 +301,15 @@ func ZRangeByScore(key string, min, max RedisSortedSetValue, scoresType RedisSor
 		return nil, err
 	}
 
-	v := make([]RedisSortedSetMember, 0)
-	if scoresType == RedisSortedSetWithScores {
+	v := make([]SortedSetMember, 0)
+	if scoresType == SortedSetWithScores {
 		for i := 0; i < len(data); i += 2 {
 			score, err := strconv.ParseFloat(string(data[i+1]), 64)
 			if err != nil {
 				return nil, err
 			}
 
-			member := RedisSortedSetMember{
+			member := SortedSetMember{
 				Member: string(data[i]),
 				Score:  score,
 			}
@@ -318,7 +318,7 @@ func ZRangeByScore(key string, min, max RedisSortedSetValue, scoresType RedisSor
 		}
 	} else {
 		for i := 0; i < len(data); i++ {
-			v = append(v, RedisSortedSetMember{Member: string(data[i])})
+			v = append(v, SortedSetMember{Member: string(data[i])})
 		}
 	}
 
@@ -331,14 +331,14 @@ func ZRangeByScore(key string, min, max RedisSortedSetValue, scoresType RedisSor
 // 可选的 WITHSCORES 参数决定结果集是单单返回有序集的成员，还是将有序集成员及其 score 值一起返回
 // 当 key 不存在时，返回 0
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRevRangeByScore(key string, max, min RedisSortedSetValue, scoresType RedisSortedSetScoresType, limit RedisSortedSetLimit) ([]RedisSortedSetMember, error) {
+func ZRevRangeByScore(key string, max, min SortedSetValue, scoresType SortedSetScoresType, limit SortedSetLimit) ([]SortedSetMember, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return nil, err
 	}
 
 	args := []interface{}{key, max.parse(), min.parse()}
-	if scoresType == RedisSortedSetWithScores {
+	if scoresType == SortedSetWithScores {
 		args = append(args, scoresType)
 	}
 	l := limit.parse()
@@ -351,15 +351,15 @@ func ZRevRangeByScore(key string, max, min RedisSortedSetValue, scoresType Redis
 		return nil, err
 	}
 
-	v := make([]RedisSortedSetMember, 0)
-	if scoresType == RedisSortedSetWithScores {
+	v := make([]SortedSetMember, 0)
+	if scoresType == SortedSetWithScores {
 		for i := 0; i < len(data); i += 2 {
 			score, err := strconv.ParseFloat(string(data[i+1]), 64)
 			if err != nil {
 				return nil, err
 			}
 
-			member := RedisSortedSetMember{
+			member := SortedSetMember{
 				Member: string(data[i]),
 				Score:  score,
 			}
@@ -368,7 +368,7 @@ func ZRevRangeByScore(key string, max, min RedisSortedSetValue, scoresType Redis
 		}
 	} else {
 		for i := 0; i < len(data); i++ {
-			v = append(v, RedisSortedSetMember{Member: string(data[i])})
+			v = append(v, SortedSetMember{Member: string(data[i])})
 		}
 	}
 
@@ -461,7 +461,7 @@ func ZRemRangeByRank(key string, start, stop int) (int, error) {
 // 也可以使用负数下标，以 -1 表示最后一个成员， -2 表示倒数第二个成员，以此类推
 // 当 key 不存在时，返回 nil 错误
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRemRangeByScore(key string, min, max RedisSortedSetValue) (int, error) {
+func ZRemRangeByScore(key string, min, max SortedSetValue) (int, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return -1, err
@@ -482,7 +482,7 @@ func ZRemRangeByScore(key string, min, max RedisSortedSetValue) (int, error) {
 // // 可选的 LIMIT 参数指定返回结果的数量及区间(就像SQL中的 SELECT LIMIT offset, count)
 // 当 key 不存在时，返回 nil 错误
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRangeByLex(key string, min, max RedisSortedSetLexValue, limit RedisSortedSetLimit) ([]string, error) {
+func ZRangeByLex(key string, min, max SortedSetLexValue, limit SortedSetLimit) ([]string, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return nil, err
@@ -512,7 +512,7 @@ func ZRangeByLex(key string, min, max RedisSortedSetLexValue, limit RedisSortedS
 // 特殊值 + 和 - 在 min 参数以及 max 参数中具有特殊的意义， 其中 + 表示正无限， 而 - 表示负无限
 // 当 key 不存在时，返回 nil 错误
 // 当 key 不是有序集合类型时，返回一个错误
-func ZLexCount(key string, min, max RedisSortedSetLexValue) (int, error) {
+func ZLexCount(key string, min, max SortedSetLexValue) (int, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return -1, err
@@ -531,7 +531,7 @@ func ZLexCount(key string, min, max RedisSortedSetLexValue) (int, error) {
 // 特殊值 + 和 - 在 min 参数以及 max 参数中具有特殊的意义， 其中 + 表示正无限， 而 - 表示负无限
 // 当 key 不存在时，返回 nil 错误
 // 当 key 不是有序集合类型时，返回一个错误
-func ZRemRangeByLex(key string, min, max RedisSortedSetLexValue) (int, error) {
+func ZRemRangeByLex(key string, min, max SortedSetLexValue) (int, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return -1, err

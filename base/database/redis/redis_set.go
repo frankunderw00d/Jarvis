@@ -1,6 +1,8 @@
-package database
+package redis
 
-import redisGo "github.com/gomodule/redigo/redis"
+import (
+	redisGo "github.com/gomodule/redigo/redis"
+)
 
 // 将一个或多个 member 元素加入到集合 key 当中，已经存在于集合的 member 元素将被忽略
 // 假如 key 不存在，则创建一个只包含 member 元素作成员的集合

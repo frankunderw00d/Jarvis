@@ -1,4 +1,4 @@
-package database
+package redis
 
 import (
 	"errors"
@@ -112,4 +112,25 @@ func (r *redis) Get() (redisGo.Conn, error) {
 // 关闭连接池
 func (r *redis) Close() error {
 	return r.pool.Close()
+}
+
+// --------------------------------------------------- Redis Public Methods --------------------------------------------
+var (
+	// 默认的 Redis 实例
+	defaultRedis = NewRedis()
+)
+
+// 1.初始化 Redis
+func InitializeRedis(idleTimeout time.Duration, maxIdle, maxActive int, host string, port int, password string) {
+	defaultRedis.Initialize(idleTimeout, maxIdle, maxActive, host, port, password)
+}
+
+// 2.Redis 获取连接
+func GetRedisConn() (redisGo.Conn, error) {
+	return defaultRedis.Get()
+}
+
+// 3.关闭 Redis
+func CloseRedis() error {
+	return defaultRedis.Close()
 }

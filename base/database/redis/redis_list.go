@@ -1,17 +1,19 @@
-package database
+package redis
 
-import redisGo "github.com/gomodule/redigo/redis"
+import (
+	redisGo "github.com/gomodule/redigo/redis"
+)
 
 type (
 	// redis 插入类型
-	RedisListInsertType string
+	ListInsertType string
 )
 
 const (
 	// 在锚定值之前插入
-	RedisListInsertBefore RedisListInsertType = "before"
+	ListInsertBefore ListInsertType = "before"
 	// 在锚定值之后插入
-	RedisListInsertAfter RedisListInsertType = "after"
+	ListInsertAfter ListInsertType = "after"
 )
 
 var ()
@@ -208,7 +210,7 @@ func LIndex(key string, index int) (string, error) {
 // 当 pivot 不存在于列表 key 时，不执行任何操作
 // 当 key 不存在时， key 被视为空列表，不执行任何操作
 // 如果 key 不是列表类型，返回一个错误
-func LInsert(key string, insertType RedisListInsertType, pivot, value interface{}) (int, error) {
+func LInsert(key string, insertType ListInsertType, pivot, value interface{}) (int, error) {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return 0, err

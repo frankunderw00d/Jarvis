@@ -1,4 +1,4 @@
-package database
+package redis
 
 import (
 	"errors"
@@ -7,26 +7,26 @@ import (
 
 type (
 	// 过期时间类型
-	RedisTimeoutType string
+	TimeoutType string
 	// 对于键存在的要求
-	RedisKeyExistType string
+	KeyExistType string
 )
 
 const (
 	// 以秒为过期时间
-	RedisStringSetTimeoutEX RedisTimeoutType = "ex"
+	StringSetTimeoutEX TimeoutType = "ex"
 	// 以毫秒为过期时间
-	RedisStringSetTimeoutPX RedisTimeoutType = "px"
+	StringSetTimeoutPX TimeoutType = "px"
 	// 键必须不存在
-	RedisStringSetNotExist RedisKeyExistType = "nx"
+	StringSetNotExist KeyExistType = "nx"
 	// 键必须存在
-	RedisStringSetExist RedisKeyExistType = "xx"
+	StringSetExist KeyExistType = "xx"
 )
 
 var ()
 
 // 单一键全面设置
-func Set(key, value string, timeoutType RedisTimeoutType, timeoutValue int64, existType RedisKeyExistType) error {
+func Set(key, value string, timeoutType TimeoutType, timeoutValue int64, existType KeyExistType) error {
 	conn, err := GetRedisConn()
 	if err != nil {
 		return err

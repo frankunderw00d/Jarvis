@@ -1,4 +1,4 @@
-package database
+package redis
 
 import (
 	redisGo "github.com/gomodule/redigo/redis"
@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	RedisLock interface {
+	DistributedLock interface {
 		// 初始化
 		Initialize() error
 
@@ -36,7 +36,7 @@ const (
 
 var ()
 
-func NewRedisLock() RedisLock {
+func NewRedisLock() DistributedLock {
 	return &redisLock{}
 }
 
