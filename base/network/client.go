@@ -32,9 +32,6 @@ type (
 
 		// 同步请求
 		RequestSync(Message) (Message, error)
-
-		// 异步请求
-		RequestAsync(Message) (chan Message, error)
 	}
 
 	// 基础客户端结构
@@ -195,7 +192,6 @@ func (bc *baseClient) Route(message Message) error {
 	}
 
 	channel <- message
-	delete(bc.routeMap, message.Reply)
 
 	return nil
 }
@@ -285,30 +281,12 @@ func (sc *socketClient) RequestSync(request Message) (Message, error) {
 
 	select {
 	case response := <-responseChannel:
+		_ = sc.baseClient.RemoveRoute(request.Reply)
 		return response, nil
 	case <-time.After(DefaultTimeout):
+		_ = sc.baseClient.RemoveRoute(request.Reply)
 		return Message{}, ErrTimeout
 	}
-}
-
-// 异步请求
-func (sc *socketClient) RequestAsync(request Message) (chan Message, error) {
-	if sc.baseClient.closed {
-		return nil, ErrClientAlreadyClosed
-	}
-
-	responseChannel := make(chan Message)
-
-	if err := sc.baseClient.AddRoute(request.Reply, responseChannel); err != nil {
-		return responseChannel, err
-	}
-
-	if err := sc.Send(request); err != nil {
-		_ = sc.baseClient.RemoveRoute(request.Reply)
-		return responseChannel, err
-	}
-
-	return responseChannel, nil
 }
 
 // 监听消息且转发
@@ -436,30 +414,12 @@ func (wsc *webSocketClient) RequestSync(request Message) (Message, error) {
 
 	select {
 	case response := <-responseChannel:
+		_ = wsc.baseClient.RemoveRoute(request.Reply)
 		return response, nil
 	case <-time.After(DefaultTimeout):
+		_ = wsc.baseClient.RemoveRoute(request.Reply)
 		return Message{}, ErrTimeout
 	}
-}
-
-// 异步请求
-func (wsc *webSocketClient) RequestAsync(request Message) (chan Message, error) {
-	if wsc.baseClient.closed {
-		return nil, ErrClientAlreadyClosed
-	}
-
-	responseChannel := make(chan Message)
-
-	if err := wsc.baseClient.AddRoute(request.Reply, responseChannel); err != nil {
-		return responseChannel, err
-	}
-
-	if err := wsc.Send(request); err != nil {
-		_ = wsc.baseClient.RemoveRoute(request.Reply)
-		return responseChannel, err
-	}
-
-	return responseChannel, nil
 }
 
 // 监听消息且转发
@@ -486,7 +446,8 @@ func (wsc *webSocketClient) run() {
 				wsc.baseClient.receiveChan <- response
 			} else {
 				if err := wsc.baseClient.Route(response); err != nil {
-					log.Printf("Socket  route response error : %s", err.Error())
+					log.Printf("%+v", response)
+					log.Printf("Socket route response error : %s", err.Error())
 				}
 			}
 		}
@@ -598,30 +559,12 @@ func (gc *gRPCClient) RequestSync(request Message) (Message, error) {
 
 	select {
 	case response := <-responseChannel:
+		_ = gc.baseClient.RemoveRoute(request.Reply)
 		return response, nil
 	case <-time.After(DefaultTimeout):
+		_ = gc.baseClient.RemoveRoute(request.Reply)
 		return Message{}, ErrTimeout
 	}
-}
-
-// 异步请求
-func (gc *gRPCClient) RequestAsync(request Message) (chan Message, error) {
-	if gc.baseClient.closed {
-		return nil, ErrClientAlreadyClosed
-	}
-
-	responseChannel := make(chan Message)
-
-	if err := gc.baseClient.AddRoute(request.Reply, responseChannel); err != nil {
-		return responseChannel, err
-	}
-
-	if err := gc.Send(request); err != nil {
-		_ = gc.baseClient.RemoveRoute(request.Reply)
-		return responseChannel, err
-	}
-
-	return responseChannel, nil
 }
 
 // 监听消息且转发
@@ -648,7 +591,8 @@ func (gc *gRPCClient) run() {
 				gc.baseClient.receiveChan <- response
 			} else {
 				if err := gc.baseClient.Route(response); err != nil {
-					log.Printf("Socket  route response error : %s", err.Error())
+					log.Printf("%+v", response)
+					log.Printf("Socket route response error : %s", err.Error())
 				}
 			}
 		}
