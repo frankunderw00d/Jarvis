@@ -41,6 +41,7 @@ type (
 		receiveChan chan Message
 		address     string
 		p           Packager
+		e           Encrypter
 		closed      bool
 	}
 
@@ -89,37 +90,38 @@ var (
 )
 
 // 新建基础客户端
-func newBaseClient(address string, packager Packager) baseClient {
+func newBaseClient(address string, packager Packager, encrypter Encrypter) baseClient {
 	return baseClient{
 		routeMap:    make(map[string]chan Message),
 		mutex:       sync.Mutex{},
 		receiveChan: make(chan Message),
 		address:     address,
 		p:           packager,
+		e:           encrypter,
 		closed:      false,
 	}
 }
 
 // 新建 Socket 客户端
-func NewSocketClient(address string, packager Packager) Client {
+func NewSocketClient(address string, packager Packager, encrypter Encrypter) Client {
 	return &socketClient{
-		baseClient: newBaseClient(address, packager),
+		baseClient: newBaseClient(address, packager, encrypter),
 		c:          nil,
 	}
 }
 
 // 新建 WebSocket 客户端
-func NewWebSocketClient(address string, packager Packager) Client {
+func NewWebSocketClient(address string, packager Packager, encrypter Encrypter) Client {
 	return &webSocketClient{
-		baseClient: newBaseClient(address, packager),
+		baseClient: newBaseClient(address, packager, encrypter),
 		c:          nil,
 	}
 }
 
 // 新建 WebSocket 客户端
-func NewGRPCClient(address string, packager Packager) Client {
+func NewGRPCClient(address string, packager Packager, encrypter Encrypter) Client {
 	return &gRPCClient{
-		baseClient: newBaseClient(address, packager),
+		baseClient: newBaseClient(address, packager, encrypter),
 		cc:         nil,
 		ccc:        nil,
 	}
@@ -247,7 +249,7 @@ func (sc *socketClient) Send(message Message) error {
 		return err
 	}
 
-	return sc.c.Write(sc.baseClient.p.Pack(data))
+	return sc.c.Write(sc.baseClient.p.Pack(sc.baseClient.e.Encrypt(data)))
 }
 
 // 关闭
@@ -304,8 +306,8 @@ func (sc *socketClient) run() {
 
 		for _, data := range sc.baseClient.p.Unpack(d) {
 			response := Message{}
-			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket  unmarshal data error : %s", err.Error())
+			if err := response.Unmarshal(sc.baseClient.e.Decrypt(data)); err != nil {
+				log.Printf("Socket unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -380,7 +382,7 @@ func (wsc *webSocketClient) Send(message Message) error {
 		return err
 	}
 
-	return wsc.c.Write(wsc.baseClient.p.Pack(data))
+	return wsc.c.Write(wsc.baseClient.p.Pack(wsc.baseClient.e.Encrypt(data)))
 }
 
 // 关闭
@@ -437,8 +439,8 @@ func (wsc *webSocketClient) run() {
 
 		for _, data := range wsc.baseClient.p.Unpack(d) {
 			response := Message{}
-			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket  unmarshal data error : %s", err.Error())
+			if err := response.Unmarshal(wsc.baseClient.e.Decrypt(data)); err != nil {
+				log.Printf("WebSocket unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -521,7 +523,7 @@ func (gc *gRPCClient) Send(message Message) error {
 		return err
 	}
 
-	return gc.ccc.Send(&gRPC.Message{Data: gc.baseClient.p.Pack(data)})
+	return gc.ccc.Send(&gRPC.Message{Data: gc.baseClient.p.Pack(gc.baseClient.e.Encrypt(data))})
 }
 
 // 关闭
@@ -582,8 +584,8 @@ func (gc *gRPCClient) run() {
 
 		for _, data := range gc.baseClient.p.Unpack(d.Data) {
 			response := Message{}
-			if err := response.Unmarshal(data); err != nil {
-				log.Printf("Socket  unmarshal data error : %s", err.Error())
+			if err := response.Unmarshal(gc.baseClient.e.Decrypt(data)); err != nil {
+				log.Printf("gRPC unmarshal data error : %s", err.Error())
 				continue
 			}
 

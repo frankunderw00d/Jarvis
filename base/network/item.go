@@ -38,11 +38,12 @@ type (
 
 	// 端定义实现
 	item struct {
-		id       ID                       // 内部唯一标识
-		conn     Conn                     // 连接
-		state    ItemState                // 状态
-		packager Packager                 // 装包者
-		FbFunc   PassiveCloseFeedbackFunc // 客户端断开反馈函数
+		id        ID                       // 内部唯一标识
+		conn      Conn                     // 连接
+		state     ItemState                // 状态
+		packager  Packager                 // 装包者
+		encrypter Encrypter                // 加密器
+		FbFunc    PassiveCloseFeedbackFunc // 客户端断开反馈函数
 	}
 )
 
@@ -66,15 +67,16 @@ const (
 )
 
 // 新建端
-func NewItem(conn Conn, packager Packager) Item {
+func NewItem(conn Conn, packager Packager, encrypter Encrypter) Item {
 	id := ID(conn.UniqueSymbol()) // 对 Conn 的唯一标识进行包装
 
 	return &item{
-		id:       EncryptID(id), // 加密
-		conn:     conn,
-		state:    ItemStateCreate,
-		packager: packager,
-		FbFunc:   nil,
+		id:        EncryptID(id), // 加密
+		conn:      conn,
+		state:     ItemStateCreate,
+		packager:  packager,
+		encrypter: encrypter,
+		FbFunc:    nil,
 	}
 }
 
@@ -119,7 +121,7 @@ func (i *item) Receive(channel chan<- Message) {
 		// 解包数据，反序列化到 BaseRequest 结构中，附带上内部唯一标识，发送到 Service 的请求消息流 channel 中
 		for _, data := range i.packager.Unpack(b) {
 			request := Message{}
-			if err := request.Unmarshal(data); err != nil {
+			if err := request.Unmarshal(i.encrypter.Decrypt(data)); err != nil {
 				log.Printf("unmarshal data to BaseRequest error : %s", err.Error())
 				continue
 			}
@@ -164,7 +166,7 @@ func (i *item) Send(response Message) {
 	}
 
 	// 通过装包者打包，往 Item 持有的 Conn 中写入
-	if err := i.conn.Write(i.packager.Pack(data)); err != nil {
+	if err := i.conn.Write(i.packager.Pack(i.encrypter.Encrypt(data))); err != nil {
 		i.state = ItemStateUnKnowClose
 		i.Close()
 		log.Printf("[%s] send error : %s", i.ID().String(), err.Error())

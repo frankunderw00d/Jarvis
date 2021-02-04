@@ -35,7 +35,8 @@ type (
 )
 
 const (
-	DefaultIntoStreamSize = 5000 // 默认进入流管道宽度
+	// 默认进入流管道宽度
+	DefaultIntoStreamSize = 5000
 )
 
 // 此常量组定义了 Service 定义及实现中可能会发生的错误文本
@@ -221,7 +222,7 @@ func (s *service) receive() {
 
 // 接收 Gate 下放的连接
 func (s *service) acceptConn(conn Conn) {
-	i := NewItem(conn, s.packager.Clone())
+	i := NewItem(conn, s.packager.Clone(), DefaultEncrypter())
 
 	if err := s.manager.ManageItem(i); err != nil {
 		log.Printf("service manage new item [%s] error : %s", i.ID().String(), err.Error())
