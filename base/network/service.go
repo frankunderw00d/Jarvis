@@ -2,7 +2,7 @@ package network
 
 import (
 	"errors"
-	"log"
+	"jarvis/base/log"
 )
 
 type (
@@ -167,24 +167,24 @@ func (s *service) Run(gates ...Gate) error {
 	// 开启入口群
 	for _, g := range gates {
 		go func(gate Gate) {
-			log.Printf("[%s] gate start", gate.Name())
+			log.InfoF("[%s] gate start", gate.Name())
 
 			if err := gate.Initialize(); err != nil {
-				log.Printf("[%s] gate initizlize error : %s", gate.Name(), err.Error())
+				log.InfoF("[%s] gate initialize error : %s", gate.Name(), err.Error())
 				return
 			}
 
 			if err := gate.Running(s.acceptConn); err != nil {
-				log.Printf("[%s] gate running error : %s", gate.Name(), err.Error())
+				log.InfoF("[%s] gate running error : %s", gate.Name(), err.Error())
 				return
 			}
 
 			if err := gate.Destroy(); err != nil {
-				log.Printf("[%s] gate destroy error : %s", gate.Name(), err.Error())
+				log.InfoF("[%s] gate destroy error : %s", gate.Name(), err.Error())
 				return
 			}
 
-			log.Printf("[%s] gate done", gate.Name())
+			log.InfoF("[%s] gate done", gate.Name())
 		}(g)
 	}
 	return nil
@@ -196,14 +196,14 @@ func (s *service) receive() {
 		// 接收请求
 		req, ok := <-s.IntoStream
 		if !ok {
-			log.Printf("service intoStream-channel closed")
+			log.DebugF("service intoStream-channel closed")
 			break
 		}
 
 		// 路由
 		handleCLL, err := s.router.RouteHandleFun(req.Module, req.Route)
 		if err != nil {
-			log.Printf("route [%s]-[%s] error : %s", req.Module, req.Route, err.Error())
+			log.ErrorF("route [%s]-[%s] error : %s", req.Module, req.Route, err.Error())
 			continue
 		}
 
@@ -225,7 +225,7 @@ func (s *service) acceptConn(conn Conn) {
 	i := NewItem(conn, s.packager.Clone(), DefaultEncrypter())
 
 	if err := s.manager.ManageItem(i); err != nil {
-		log.Printf("service manage new item [%s] error : %s", i.ID().String(), err.Error())
+		log.ErrorF("service manage new item [%s] error : %s", i.ID().String(), err.Error())
 		// todo : send a message to the connection to tell it why
 		i.Close()
 		i = nil

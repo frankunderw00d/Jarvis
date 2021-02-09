@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
+	"jarvis/base/log"
 	gRPC "jarvis/base/network/grpc"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -307,7 +307,7 @@ func (sc *socketClient) run() {
 		for _, data := range sc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(sc.baseClient.e.Decrypt(data)); err != nil {
-				log.Printf("Socket unmarshal data error : %s", err.Error())
+				log.ErrorF("Socket unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -315,17 +315,17 @@ func (sc *socketClient) run() {
 				sc.baseClient.receiveChan <- response
 			} else {
 				if err := sc.baseClient.Route(response); err != nil {
-					log.Printf("Socket route response error : %s", err.Error())
+					log.ErrorF("Socket route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket  read error : %s", e.Error())
+		log.ErrorF("Socket  read error : %s", e.Error())
 
 		if err := sc.Close(); err != nil {
-			log.Printf("socket  close error : %s", err.Error())
+			log.ErrorF("socket  close error : %s", err.Error())
 		}
 	}
 }
@@ -440,7 +440,7 @@ func (wsc *webSocketClient) run() {
 		for _, data := range wsc.baseClient.p.Unpack(d) {
 			response := Message{}
 			if err := response.Unmarshal(wsc.baseClient.e.Decrypt(data)); err != nil {
-				log.Printf("WebSocket unmarshal data error : %s", err.Error())
+				log.ErrorF("WebSocket unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -448,18 +448,18 @@ func (wsc *webSocketClient) run() {
 				wsc.baseClient.receiveChan <- response
 			} else {
 				if err := wsc.baseClient.Route(response); err != nil {
-					log.Printf("%+v", response)
-					log.Printf("Socket route response error : %s", err.Error())
+					log.TraceF("%+v", response)
+					log.ErrorF("Socket route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket  read error : %s", e.Error())
+		log.ErrorF("Socket  read error : %s", e.Error())
 
 		if err := wsc.Close(); err != nil {
-			log.Printf("socket  close error : %s", err.Error())
+			log.ErrorF("socket  close error : %s", err.Error())
 		}
 	}
 }
@@ -585,7 +585,7 @@ func (gc *gRPCClient) run() {
 		for _, data := range gc.baseClient.p.Unpack(d.Data) {
 			response := Message{}
 			if err := response.Unmarshal(gc.baseClient.e.Decrypt(data)); err != nil {
-				log.Printf("gRPC unmarshal data error : %s", err.Error())
+				log.ErrorF("gRPC unmarshal data error : %s", err.Error())
 				continue
 			}
 
@@ -593,18 +593,18 @@ func (gc *gRPCClient) run() {
 				gc.baseClient.receiveChan <- response
 			} else {
 				if err := gc.baseClient.Route(response); err != nil {
-					log.Printf("%+v", response)
-					log.Printf("Socket route response error : %s", err.Error())
+					log.TraceF("%+v", response)
+					log.ErrorF("Socket route response error : %s", err.Error())
 				}
 			}
 		}
 	}
 
 	if e != nil {
-		log.Printf("Socket  read error : %s", e.Error())
+		log.ErrorF("Socket  read error : %s", e.Error())
 
 		if err := gc.Close(); err != nil {
-			log.Printf("socket  close error : %s", err.Error())
+			log.ErrorF("socket  close error : %s", err.Error())
 		}
 	}
 }

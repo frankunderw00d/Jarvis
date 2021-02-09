@@ -7,7 +7,7 @@
 package network
 
 import (
-	"log"
+	"jarvis/base/log"
 	"strings"
 )
 
@@ -122,7 +122,7 @@ func (i *item) Receive(channel chan<- Message) {
 		for _, data := range i.packager.Unpack(b) {
 			request := Message{}
 			if err := request.Unmarshal(i.encrypter.Decrypt(data)); err != nil {
-				log.Printf("unmarshal data to BaseRequest error : %s", err.Error())
+				log.ErrorF("unmarshal data to BaseRequest error : %s", err.Error())
 				continue
 			}
 
@@ -144,7 +144,7 @@ func (i *item) Receive(channel chan<- Message) {
 			i.state = ItemStateInitiativeClose
 		} else { // 未知错误
 			i.state = ItemStateUnKnowClose
-			log.Printf("[%s] receive error : %s", i.ID().String(), e.Error())
+			log.ErrorF("[%s] receive error : %s", i.ID().String(), e.Error())
 		}
 	}
 
@@ -161,7 +161,7 @@ func (i *item) Send(response Message) {
 	// 将 BaseResponse 序列化
 	data, err := response.Marshal()
 	if err != nil {
-		log.Printf("[%s] unmarshal response error : %s", i.ID().String(), err.Error())
+		log.ErrorF("[%s] unmarshal response error : %s", i.ID().String(), err.Error())
 		return
 	}
 
@@ -169,20 +169,20 @@ func (i *item) Send(response Message) {
 	if err := i.conn.Write(i.packager.Pack(i.encrypter.Encrypt(data))); err != nil {
 		i.state = ItemStateUnKnowClose
 		i.Close()
-		log.Printf("[%s] send error : %s", i.ID().String(), err.Error())
+		log.ErrorF("[%s] send error : %s", i.ID().String(), err.Error())
 	}
 }
 
 // 关闭
 func (i *item) Close() {
 	if err := i.conn.Close(); err != nil {
-		log.Printf("[%s] close error : %s", i.ID().String(), err.Error())
+		log.ErrorF("[%s] close error : %s", i.ID().String(), err.Error())
 	}
 	// 断开反馈
 	// 向上反馈给 Service 持有的 Manager ， Manager 会通过钩子函数向业务反馈
 	if i.FbFunc != nil {
 		if err := i.FbFunc(i.ID().String()); err != nil {
-			log.Printf("[%s] - [%s] close feedback error -%s", i.ID().String(), i.state.String(), err.Error())
+			log.ErrorF("[%s] - [%s] close feedback error -%s", i.ID().String(), i.state.String(), err.Error())
 		}
 	}
 	//log.Printf("[%s] closed-%s", i.ID().String(), i.state.String())

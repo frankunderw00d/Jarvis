@@ -4,8 +4,8 @@ import (
 	"errors"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
+	"jarvis/base/log"
 	gRPC "jarvis/base/network/grpc"
-	"log"
 	"net"
 	"net/http"
 )
@@ -250,7 +250,7 @@ func (wsg *webSocketGate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 升级请求为 webSocket
 	c, err := wsg.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("websocket Gate upgrade request error : %s", err.Error())
+		log.ErrorF("websocket Gate upgrade request error : %s", err.Error())
 		return
 	}
 
